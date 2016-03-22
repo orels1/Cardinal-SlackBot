@@ -1,0 +1,28 @@
+{
+  "name": "cardinal-slackbot",
+  "version": "0.0.1",
+  "description": "Bot for slack",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "watch": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orels1/Cardinal-SlackBot.git"
+  },
+  "keywords": [
+    "slack",
+    "bot",
+    "realtime"
+  ],
+  "author": "orels1",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/orels1/Cardinal-SlackBot/issues"
+  },
+  "homepage": "https://github.com/orels1/Cardinal-SlackBot#readme",
+  "dependencies": {
+    "@slack/client": "^2.2.1"
+  }
+}
