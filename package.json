@@ -23,6 +23,8 @@
   },
   "homepage": "https://github.com/orels1/Cardinal-SlackBot#readme",
   "dependencies": {
-    "@slack/client": "^2.2.1"
+    "@slack/client": "^2.2.1",
+    "cheerio": "^0.20.0",
+    "request": "^2.69.0"
   }
 }
