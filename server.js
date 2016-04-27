@@ -11,7 +11,7 @@ var _ = require('underscore');
 var fs = require('fs');
 var moment = require('moment');
 var CronJob = require('cron').CronJob;
-var config = require('config');
+var config = require('./config');
 
 moment.locale('ru');
 
