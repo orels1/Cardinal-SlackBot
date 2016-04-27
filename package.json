@@ -25,6 +25,12 @@
   "dependencies": {
     "@slack/client": "^2.2.1",
     "cheerio": "^0.20.0",
-    "request": "^2.69.0"
+    "countdown": "^2.6.0",
+    "cron": "^1.1.0",
+    "impurge-remix": "^0.1.0",
+    "moment": "^2.12.0",
+    "moment-countdown": "0.0.3",
+    "request": "^2.69.0",
+    "underscore": "^1.8.3"
   }
 }

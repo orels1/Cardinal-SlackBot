@@ -7,7 +7,12 @@ var RTM_EVENTS = require('@slack/client').RTM_EVENTS;
 //Everything else
 var cheerio = require('cheerio');
 var request = require('request');
+var _ = require('underscore');
 var fs = require('fs');
+var moment = require('moment');
+var CronJob = require('cron').CronJob;
+
+moment.locale('ru');
 
 var token = process.env.SLACK_API_TOKEN || 'xoxb-28712752370-dYR4fkIPJ4s31N7uZwd9mIVN';
 
@@ -35,7 +40,7 @@ rtm.on(CLIENT_EVENTS.RTM.AUTHENTICATED, function (rtmStartData) {
 rtm.on(RTM_EVENTS.MESSAGE, function (message) {
 	// Listens to all `message` events from the team
 	if(message.user != bot && message.text){
-		if (message.text.substr(0,1) == prefix){
+		if (message.text.substr(0,1) == prefix && message.text.length > 1){
 			console.log('incoming ', message);
 			//web.chat.delete(message.ts, message.channel);
 			get_command(message);	
@@ -133,7 +138,7 @@ ctx.service.getUser = function(mention, callback){
 }
 
 ctx.commands.flip = function(ctx, args){
-	//Flips a coin... or a <user> //
+	//Flips a coin... or a <user> or a table :D //
 	var choice = ['HEADS!*', 'TAILS!*'];
 
 	function getRandomInt(min, max){
@@ -151,8 +156,11 @@ ctx.commands.flip = function(ctx, args){
 				rtm.sendMessage('(╯°□°）╯︵ ' + flipUser(user, false), ctx.channel);
 			})
 		} 
-		else{
-			rtm.sendMessage('(╯°□°）╯︵ ' + flipUser(args[0], false), ctx.channel);
+		else if (args[0] == 'table'){
+			rtm.sendMessage('(╯°□°）╯︵ ┻━┻', ctx.channel);
+		}
+		else {
+			rtm.sendMessage('(╯°□°）╯︵ ' + flipUser(args.join(' '), false), ctx.channel);
 		}
 	}else{
 		rtm.sendMessage('*flips a coin and... ' + choice[getRandomInt(0,1)], ctx.channel);
@@ -161,7 +169,7 @@ ctx.commands.flip = function(ctx, args){
 
 ctx.commands.unflip = function(ctx, args){
 	//Unflipps <flipped_user> //
-	rtm.sendMessage(flipUser(args[0], true)+' ノ( ゜-゜ノ)', ctx.channel);
+	rtm.sendMessage(flipUser(args.join(' '), true)+' ノ( ゜-゜ノ)', ctx.channel);
 }
 
 ctx.commands.exterminatus = function(ctx, args){       
@@ -348,9 +356,59 @@ ctx.commands.moder = function(ctx, args){
 				web.chat.postMessage(ctx.channel, 'Showing 3 last entries', {attachments: attachments, as_user: true});
 			}
 		});	
+	} else if (args[0] == 'history' ){
+
+		function getPrevNames(user, search){
+			request('http://moder.kanobu.ru/api/feedSearch/' + search, function (error, response, body) {
+				if (!error && response.statusCode == 200) {
+					var data = JSON.parse(body);
+					var result = _.uniq(_.pluck(data, 'name'));
+					rtm.sendMessage('User *' + user + '* was also known as *' + result.join('*, *') + '*', ctx.channel);
+				}
+			});	
+		}
+
+		if(args[1] == 'name'){
+			var knbId = '';
+
+			if(args.length > 3) {
+				var user = args.splice(2).join(' ');
+			}else{
+				var user = args[2];
+			}
+
+			request('http://moder.kanobu.ru/api/feedList/user/' + encodeURI(user), function (error, response, body) {
+				if (!error && response.statusCode == 200) {
+					var data = JSON.parse(body);
+					if (data.result.length > 0){
+						var knbId = data.result[0].knbId;
+						getPrevNames(user, encodeURI('id:' + knbId));
+					} else {
+						rtm.sendMessage('User not found', ctx.channel);
+					}
+				}
+			});	
+			
+
+		} else if (args[1] == 'id'){
+			var knbId = args[2];
+			getPrevNames('id: '+knbId, 'id:'+knbId);
+		}
 	}
 }
 
+
+//DARK SOULS
+ctx.commands.ds3 = function(ctx, args){
+	var time = '2016-04-12 01:00:00';
+	
+	rtm.sendMessage('Dark Souls 3 выйдет *' + moment(time).fromNow() + '*\nhttp://risovach.ru/upload/2015/06/mem/muzhik-sypet-pesok-na-plyazhe_84411601_orig_.jpg', ctx.channel);
+}
+
+//new CronJob('* * * * * *', function() {
+//	var payload = {channel: 'C062K581Z'};
+//	ctx.commands.ds3(payload);
+//}, null, true, 'Europe/Moscow');
 
 
 
