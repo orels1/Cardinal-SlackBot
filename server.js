@@ -11,10 +11,11 @@ var _ = require('underscore');
 var fs = require('fs');
 var moment = require('moment');
 var CronJob = require('cron').CronJob;
+var config = require('config');
 
 moment.locale('ru');
 
-var token = process.env.SLACK_API_TOKEN || 'xoxb-28712752370-dYR4fkIPJ4s31N7uZwd9mIVN';
+var token = process.env.SLACK_API_TOKEN || config.token;
 
 var rtm = new RtmClient(token); // For realtime
 var web = new WebClient(token);	// For webhooks
