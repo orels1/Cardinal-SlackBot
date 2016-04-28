@@ -13,6 +13,9 @@ var moment = require('moment');
 var CronJob = require('cron').CronJob;
 var config = require('./config');
 
+//Modules
+var modules = require('./modules')
+
 moment.locale('ru');
 
 var token = process.env.SLACK_API_TOKEN || config.token;
@@ -30,6 +33,8 @@ var bot = 'U0ULYN4AW'
 var ctx = {
 	channel : '',
 	user: '',
+	rtm: rtm,
+	web: web,
 	commands: {},
 	service: {}
 }
@@ -49,25 +54,42 @@ rtm.on(RTM_EVENTS.MESSAGE, function (message) {
 	}
 });
 
-function get_command(message){
-	var args = message.text.substr(1).split(' ');
+function get_command(message) {
+	let args = message.text.substr(1).split(' ')
 	ctx.channel  = message.channel;
 	ctx.user = message.user;
 	executeFunctionByName(args[0], ctx, args.splice(1));
 }
 
-function executeFunctionByName(functionName, context, args) {
-	if (!context['commands'][functionName]){
-		rtm.sendMessage('No such command, type ' + prefix + 'help for a list of commands', ctx.channel);
-	}else{
-		context['commands'][functionName](context, args);
-	}
+function getParamNames(fn) {
+	let funStr = fn.toString()
+	return funStr.slice(funStr.indexOf('(') + 1, funStr.indexOf(')')).match(/([^\s,]+)/g)
 }
 
-ctx.commands.ping = function(ctx, args){
-	//Pings stuff back //
-	rtm.sendMessage('pong', ctx.channel);
-	console.log(ctx.commands.ping);
+function executeFunctionByName(functionName, context, args) {
+	Object.keys(modules).forEach(function(module) {
+		// Check if function exists
+		if (modules[module].commands.indexOf(functionName) > -1) {
+			// Check if args are needed
+			if (modules[module].module[functionName].length > 1) {
+				// Check if args were provided
+				if (args.length > 0 && modules[module].module[functionName].length - 1 === args.length) {
+					// Pass arguments in that case
+					args.unshift(context)
+					modules[module].module[functionName].apply(null, args)
+				} else {
+					argNames = getParamNames(modules[module].module[functionName])
+					argNames.splice(0, 1)
+					let reqArgs = argNames.join(', ')
+					rtm.sendMessage('Missing arguments: ' + reqArgs, ctx.channel)
+				}
+			} else {
+				modules[module].module[functionName](rtm, context)
+			}
+		} else {
+			rtm.sendMessage('No such command, type ' + prefix + 'help for a list of commands', ctx.channel);
+		}
+	})
 }
 
 ctx.commands.help = function(ctx, args){
@@ -102,75 +124,12 @@ ctx.commands.help = function(ctx, args){
 	rtm.sendMessage(message, ctx.channel);
 }
 
-ctx.commands.fetch = function(ctx, args){
-	//Fetches <stuff> to <user> //
-	rtm.sendMessage('Have your ' + args[0] + ', ' + (args[1] ? args[1] : '<@'+ctx.user+'>'), ctx.channel);
-}
-
-function flipUser(user, reverse){
-	var char = "abcdefghijklmnopqrstuvwxyz".split('');
-    var tran = "ɐqɔpǝɟƃɥᴉɾʞlɯuodbɹsʇnʌʍxʎz".split('');
-    if (reverse){
-    	var temp = char;
-    	char = tran;
-    	tran = temp;
-    }
-    var table = {};
-    char.forEach(function(element, i){
-    	table[element] = tran[i];
-    });
-
-    var userArr = user.split('')
-    userArr.forEach(function(element, i){
-    	if(table[element]){
-    		userArr[i] = table[element];
-    	}
-    });
-
-    return userArr.reverse().join('');
-}
-
 ctx.service.getUser = function(mention, callback){
 	var user = mention.replace('<@','').replace('>','');
 	web.users.info(user, function(err, info){
 		user = info.user.name;
 		callback(user);
 	})
-}
-
-ctx.commands.flip = function(ctx, args){
-	//Flips a coin... or a <user> or a table :D //
-	var choice = ['HEADS!*', 'TAILS!*'];
-
-	function getRandomInt(min, max){
-		return Math.floor(Math.random() * (max - min + 1)) + min;
-	}
-
-	
-
-	if (args.length > 0){
-		if(args[0].substr(0,1) == '<' ){
-			var user = args[0].replace('<@','').replace('>','');
-			web.users.info(user, function(err, info){
-				user = info.user.name;
-
-				rtm.sendMessage('(╯°□°）╯︵ ' + flipUser(user, false), ctx.channel);
-			})
-		} 
-		else if (args[0] == 'table'){
-			rtm.sendMessage('(╯°□°）╯︵ ┻━┻', ctx.channel);
-		}
-		else {
-			rtm.sendMessage('(╯°□°）╯︵ ' + flipUser(args.join(' '), false), ctx.channel);
-		}
-	}else{
-		rtm.sendMessage('*flips a coin and... ' + choice[getRandomInt(0,1)], ctx.channel);
-	}
-}
-
-ctx.commands.unflip = function(ctx, args){
-	//Unflipps <flipped_user> //
-	rtm.sendMessage(flipUser(args.join(' '), true)+' ノ( ゜-゜ノ)', ctx.channel);
 }
 
 ctx.commands.exterminatus = function(ctx, args){       
